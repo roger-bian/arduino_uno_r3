@@ -1,18 +1,8 @@
 import sys
 import time
+import argparse
 from telemetrix import telemetrix
 
-# pins
-DIGITAL_PIN = [
-    3,
-    4,
-    5,
-    6,
-    9,
-    10,
-    11,
-    12
-]
 
 # Callback data indices
 CB_PIN_MODE = 0
@@ -34,23 +24,23 @@ def the_callback(data):
 def on_off_single(board, pin):
     print(f'{pin}: ON')
     board.digital_write(pin, 1)
-    time.sleep(1)
+    time.sleep(0.5)
     
     print(f'{pin}: OFF')
     board.digital_write(pin, 0)
-    time.sleep(1)
+    time.sleep(0.5)
 
 
 def on_off_double(board, pin1, pin2):
     print(f'{pin1} & {pin2}: ON')
     board.digital_write(pin1, 1)
     board.digital_write(pin2, 1)
-    time.sleep(1)
+    time.sleep(0.5)
     
     print(f'{pin1} & {pin2}: OFF')
     board.digital_write(pin1, 0)
     board.digital_write(pin2, 0)
-    time.sleep(1)
+    time.sleep(0.5)
 
 
 def digital_in_pullup(board, pin):
@@ -64,39 +54,37 @@ def digital_in_pullup(board, pin):
     time.sleep(0.001)
 
 
-
-board = telemetrix.Telemetrix(
-    com_port="COM4",
-    arduino_instance_id=1,
-    # arduino_wait=2,
-)
-
-
-# pull up pins
-for pin in DIGITAL_PIN:
-    digital_in_pullup(board, pin)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Telemetrix Digital Pin Example')
+    parser.add_argument('--pins', type=int, nargs='+', default=[13])
+    parser.add_argument('--with_double', action='store_true')
+    args = parser.parse_args()
+    
+    # Initialize the Telemetrix board
+    board = telemetrix.Telemetrix()
 
 
-try:
-    while True:
-        # single pin
-        for pin in DIGITAL_PIN:
-            on_off_single(board, pin)
+    # pull up pins
+    for pin in args.pins:
+        digital_in_pullup(board, pin)
+
+
+    try:
+        while True:
+            # single pin
+            for pin in args.pins:
+                on_off_single(board, pin)
+                
+            if args.with_double:
+                for pin1, pin2 in zip(args.pins[:-2], args.pins[2:]):
+                    # double pin
+                    on_off_double(board, pin1, pin2)
             
-            
-        # double pin
-        on_off_double(board, DIGITAL_PIN[0], DIGITAL_PIN[2])
-        on_off_double(board, DIGITAL_PIN[1], DIGITAL_PIN[3])
-        on_off_double(board, DIGITAL_PIN[2], DIGITAL_PIN[4])
-        on_off_double(board, DIGITAL_PIN[3], DIGITAL_PIN[5])
-        on_off_double(board, DIGITAL_PIN[4], DIGITAL_PIN[6])
-        on_off_double(board, DIGITAL_PIN[5], DIGITAL_PIN[7])
         
-    
-except KeyboardInterrupt:
-    print('Exiting...')
-    for pin in DIGITAL_PIN:
-        board.digital_write(pin, 0)    
-    
-    board.shutdown()
-    sys.exit(0)
+    except KeyboardInterrupt:
+        print('Exiting...')
+        for pin in args.pins:
+            board.digital_write(pin, 0)    
+        
+        board.shutdown()
+        sys.exit(0)
