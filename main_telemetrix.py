@@ -21,26 +21,14 @@ def the_callback(data):
     date = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data[CB_TIME]))
     print(f'Pin Mode: {data[CB_PIN_MODE]} Pin: {data[CB_PIN]} Value: {data[CB_VALUE]} Time Stamp: {date}')
 
-def on_off_single(board, pin):
+def on(board, pin):
     print(f'{pin}: ON')
-    board.digital_write(pin, 1)
-    time.sleep(0.5)
+    board.digital_write(pin, 1)    
     
+
+def off(board, pin):
     print(f'{pin}: OFF')
     board.digital_write(pin, 0)
-    time.sleep(0.5)
-
-
-def on_off_double(board, pin1, pin2):
-    print(f'{pin1} & {pin2}: ON')
-    board.digital_write(pin1, 1)
-    board.digital_write(pin2, 1)
-    time.sleep(0.5)
-    
-    print(f'{pin1} & {pin2}: OFF')
-    board.digital_write(pin1, 0)
-    board.digital_write(pin2, 0)
-    time.sleep(0.5)
 
 
 def digital_in_pullup(board, pin):
@@ -57,7 +45,8 @@ def digital_in_pullup(board, pin):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Telemetrix Digital Pin Example')
     parser.add_argument('--pins', type=int, nargs='+', default=[13])
-    parser.add_argument('--with_double', action='store_true')
+    parser.add_argument('--double', action='store_true')
+    parser.add_argument('--blink', action='store_true')
     args = parser.parse_args()
     
     # Initialize the Telemetrix board
@@ -70,15 +59,27 @@ if __name__ == "__main__":
 
 
     try:
-        while True:
-            # single pin
+        if args.blink:
+            while True:
+                if args.double:
+                    for pin1, pin2 in zip(args.pins[:-2], args.pins[2:]):
+                        on(board, pin1)
+                        on(board, pin2)
+                        time.sleep(0.5)
+                        off(board, pin1)
+                        off(board, pin2)
+                        time.sleep(0.5)
+                else:
+                    for pin in args.pins:
+                        on(board, pin)
+                        time.sleep(0.5)
+                        off(board, pin)
+                        time.sleep(0.5)
+        else:
             for pin in args.pins:
-                on_off_single(board, pin)
-                
-            if args.with_double:
-                for pin1, pin2 in zip(args.pins[:-2], args.pins[2:]):
-                    # double pin
-                    on_off_double(board, pin1, pin2)
+                on(board, pin)
+            while True:
+                time.sleep(1)
             
         
     except KeyboardInterrupt:
